@@ -148,9 +148,21 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrEmpty(origin)) return false;
+            var uri = new Uri(origin);
+            // Allow any localhost port 3000-3009 for local dev
+            if (uri.Host == "localhost" && uri.Port >= 3000 && uri.Port <= 3009)
+                return true;
+            // Allow production URL via environment variable
+            var prodUrl = builder.Configuration["AllowedOrigin"];
+            if (!string.IsNullOrEmpty(prodUrl) && origin.StartsWith(prodUrl))
+                return true;
+            return false;
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 });
 
 var app = builder.Build();
