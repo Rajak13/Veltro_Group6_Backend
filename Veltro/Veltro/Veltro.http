@@ -1,0 +1,6 @@
+@Veltro_HostAddress = http://localhost:5129
+
+GET {{Veltro_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
