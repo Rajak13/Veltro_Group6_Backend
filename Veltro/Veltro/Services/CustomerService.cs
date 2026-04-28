@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Veltro.Data;
-using Veltro.DTOs.Request.Customer;
+using Veltro.Data;using Veltro.DTOs.Request.Customer;
 using Veltro.DTOs.Response.Customer;
 using Veltro.Helpers;
 using Veltro.Models;
@@ -173,6 +172,50 @@ public class CustomerService : ICustomerService
         }
     }
 
+    /// <summary>Lists customers with optional free-text search across name AND phone.</summary>
+    public async Task<PagedResult<CustomerResponseDto>> GetCustomersAsync(
+        string? search, int page, int pageSize)
+    {
+        try
+        {
+            var q = _customerRepo.GetQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                q = q.Where(c =>
+                    EF.Functions.ILike(c.User.FullName, $"%{s}%") ||
+                    (c.Phone != null && EF.Functions.ILike(c.Phone, $"%{s}%")));
+            }
+
+            var projected = q.Select(c => new CustomerResponseDto
+            {
+                CustomerId   = c.CustomerId,
+                UserId       = c.UserId,
+                FullName     = c.User.FullName,
+                Email        = c.User.Email,
+                Phone        = c.Phone,
+                Address      = c.Address,
+                CreditBalance = c.CreditBalance,
+                Vehicles     = c.Vehicles.Select(v => new VehicleSummaryDto
+                {
+                    VehicleId          = v.VehicleId,
+                    Make               = v.Make,
+                    Model              = v.Model,
+                    Year               = v.Year,
+                    RegistrationNumber = v.RegistrationNumber
+                }).ToList()
+            });
+
+            return await PaginationHelper.PaginateAsync(projected, page, pageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetCustomersAsync failed for search '{Search}'", search);
+            throw;
+        }
+    }
+
     /// <summary>Searches customers by name, phone, ID, or vehicle registration.</summary>
     public async Task<PagedResult<CustomerResponseDto>> SearchCustomersAsync(
         string query, string type, int page, int pageSize)
@@ -183,11 +226,11 @@ public class CustomerService : ICustomerService
 
             q = type.ToLower() switch
             {
-                "phone"   => q.Where(c => c.Phone != null && c.Phone.Contains(query)),
+                "phone"   => q.Where(c => c.Phone != null && EF.Functions.ILike(c.Phone, $"%{query}%")),
                 "id"      => q.Where(c => c.CustomerId.ToString() == query),
                 "vehicle" => q.Where(c => c.Vehicles.Any(v =>
-                                v.RegistrationNumber != null && v.RegistrationNumber.Contains(query))),
-                _         => q.Where(c => c.User.FullName.ToLower().Contains(query.ToLower()))
+                                v.RegistrationNumber != null && EF.Functions.ILike(v.RegistrationNumber, $"%{query}%"))),
+                _         => q.Where(c => EF.Functions.ILike(c.User.FullName, $"%{query}%"))
             };
 
             var projected = q.Select(c => new CustomerResponseDto

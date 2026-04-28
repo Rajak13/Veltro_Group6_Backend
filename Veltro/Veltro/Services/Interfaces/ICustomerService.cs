@@ -12,6 +12,7 @@ public interface ICustomerService
     Task<CustomerResponseDto?> GetCustomerByUserIdAsync(Guid userId);
     Task<CustomerHistoryResponseDto?> GetCustomerHistoryAsync(Guid customerId);
     Task<CustomerResponseDto?> UpdateCustomerAsync(Guid userId, UpdateCustomerDto dto);
+    Task<PagedResult<CustomerResponseDto>> GetCustomersAsync(string? search, int page, int pageSize);
     Task<PagedResult<CustomerResponseDto>> SearchCustomersAsync(string query, string type, int page, int pageSize);
     Task AddVehicleAsync(Guid userId, CreateVehicleDto dto);
     Task UpdateVehicleAsync(Guid vehicleId, CreateVehicleDto dto);
