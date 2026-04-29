@@ -171,7 +171,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await context.Database.MigrateAsync();
+    try
+    {
+        await context.Database.MigrateAsync();
+    }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07")
+    {
+        // Table already exists - likely created manually or migration history is missing
+        Log.Warning("Migration failed because tables already exist. Skipping migration.");
+        Log.Information("If this is a fresh setup, consider running the fix-migration-history.sql script.");
+    }
     await Seeder.SeedAsync(context);
 }
 
