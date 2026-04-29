@@ -17,6 +17,8 @@ public class Appointment
 
     public DateTime ScheduledDate { get; set; }
 
+    public string? ServiceType { get; set; }
+
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
 
     public string? Notes { get; set; }

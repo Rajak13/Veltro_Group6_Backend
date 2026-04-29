@@ -143,6 +143,66 @@ public class PartService : IPartService
         }
     }
 
+    /// <summary>Searches parts by name or description.</summary>
+    public async Task<PagedResult<PartResponseDto>> SearchPartsAsync(string query, int page, int pageSize)
+    {
+        try
+        {
+            var searchQuery = _partRepo.GetQueryable()
+                .Where(p => p.Name.Contains(query) || (p.Description != null && p.Description.Contains(query)))
+                .Select(p => new PartResponseDto
+                {
+                    PartId = p.PartId,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    LowStockThreshold = p.LowStockThreshold,
+                    VendorId = p.VendorId,
+                    VendorName = p.Vendor.Name,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt
+                });
+
+            return await PaginationHelper.PaginateAsync(searchQuery, page, pageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to search parts with query: {Query}", query);
+            throw;
+        }
+    }
+
+    /// <summary>Returns parts where stock is below the low stock threshold.</summary>
+    public async Task<PagedResult<PartResponseDto>> GetLowStockPartsAsync(int page, int pageSize)
+    {
+        try
+        {
+            var lowStockQuery = _partRepo.GetQueryable()
+                .Where(p => p.StockQuantity < p.LowStockThreshold)
+                .Select(p => new PartResponseDto
+                {
+                    PartId = p.PartId,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    LowStockThreshold = p.LowStockThreshold,
+                    VendorId = p.VendorId,
+                    VendorName = p.Vendor.Name,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt
+                });
+
+            return await PaginationHelper.PaginateAsync(lowStockQuery, page, pageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve low stock parts");
+            throw;
+        }
+    }
+
     /// <summary>Sends a low-stock notification to all Admin users if stock is below threshold.</summary>
     public async Task CheckAndNotifyLowStockAsync(Part part)
     {

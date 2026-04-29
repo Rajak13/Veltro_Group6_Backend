@@ -12,4 +12,6 @@ public interface IPartService
     Task<PartResponseDto> CreatePartAsync(CreatePartDto dto);
     Task<PartResponseDto?> UpdatePartAsync(Guid id, UpdatePartDto dto);
     Task<bool> DeletePartAsync(Guid id);
+    Task<PagedResult<PartResponseDto>> SearchPartsAsync(string query, int page, int pageSize);
+    Task<PagedResult<PartResponseDto>> GetLowStockPartsAsync(int page, int pageSize);
 }

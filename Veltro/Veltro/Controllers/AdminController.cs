@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Veltro.Data;
 using Veltro.DTOs.Request.Staff;
 using Veltro.Helpers;
@@ -120,4 +121,75 @@ public class AdminController : ControllerBase
             return StatusCode(500, ApiResponse<object>.Fail("An error occurred."));
         }
     }
+
+    // ─── Review Management ────────────────────────────────────────────────────
+
+    /// <summary>Returns all reviews (pending and approved) for admin review.</summary>
+    [HttpGet("reviews")]
+    public async Task<IActionResult> GetAllReviews([FromQuery] bool? approved = null)
+    {
+        var query = _context.Reviews
+            .Include(r => r.Customer)
+            .ThenInclude(c => c.User)
+            .AsQueryable();
+
+        if (approved.HasValue)
+            query = query.Where(r => r.IsApproved == approved.Value);
+
+        var reviews = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new
+            {
+                r.ReviewId,
+                r.Rating,
+                r.Comment,
+                r.IsApproved,
+                r.CreatedAt,
+                CustomerName = r.Customer.User.FullName,
+                CustomerEmail = r.Customer.User.Email
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(reviews));
+    }
+
+    /// <summary>Approves a review.</summary>
+    [HttpPut("reviews/{id:guid}/approve")]
+    public async Task<IActionResult> ApproveReview(Guid id)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+            return NotFound(ApiResponse<object>.Fail("Review not found."));
+
+        review.IsApproved = true;
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse<object>.Ok(new { }, "Review approved."));
+    }
+
+    /// <summary>Rejects/unapproves a review.</summary>
+    [HttpPut("reviews/{id:guid}/reject")]
+    public async Task<IActionResult> RejectReview(Guid id)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+            return NotFound(ApiResponse<object>.Fail("Review not found."));
+
+        review.IsApproved = false;
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse<object>.Ok(new { }, "Review rejected."));
+    }
+
+    /// <summary>Deletes a review.</summary>
+    [HttpDelete("reviews/{id:guid}")]
+    public async Task<IActionResult> DeleteReview(Guid id)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+            return NotFound(ApiResponse<object>.Fail("Review not found."));
+
+        _context.Reviews.Remove(review);
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse<object>.Ok(new { }, "Review deleted."));
+    }
 }
+

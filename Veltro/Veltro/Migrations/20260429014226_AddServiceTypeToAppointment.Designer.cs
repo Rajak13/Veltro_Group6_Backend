@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Veltro.Data;
@@ -11,9 +12,11 @@ using Veltro.Data;
 namespace Veltro.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429014226_AddServiceTypeToAppointment")]
+    partial class AddServiceTypeToAppointment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -248,9 +251,6 @@ namespace Veltro.Migrations
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("boolean");
 
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
