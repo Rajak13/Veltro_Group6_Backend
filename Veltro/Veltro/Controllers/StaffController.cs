@@ -19,6 +19,21 @@ public class StaffController : ControllerBase
         _customerService = customerService;
     }
 
+    /// <summary>
+    /// Returns a paginated list of all customers.
+    /// Searches across both name and phone simultaneously.
+    /// </summary>
+    [HttpGet("customers")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCustomers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
+    {
+        var result = await _customerService.GetCustomersAsync(search, page, pageSize);
+        return Ok(ApiResponse<object>.Ok(result));
+    }
+
     /// <summary>Registers a new customer with an optional vehicle.</summary>
     [HttpPost("customers")]
     [ProducesResponseType(StatusCodes.Status201Created)]
