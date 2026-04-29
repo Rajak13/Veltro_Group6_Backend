@@ -6,10 +6,10 @@ using Veltro.Services.Interfaces;
 
 namespace Veltro.Controllers;
 
-/// <summary>Parts inventory management — Admin only.</summary>
+/// <summary>Parts inventory management — Admin and Staff can view, Admin can modify.</summary>
 [ApiController]
 [Route("api/parts")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Staff")]
 public class PartsController : ControllerBase
 {
     private readonly IPartService _partService;
@@ -42,6 +42,7 @@ public class PartsController : ControllerBase
 
     /// <summary>Creates a new part in inventory.</summary>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreatePartDto dto)
@@ -53,6 +54,7 @@ public class PartsController : ControllerBase
 
     /// <summary>Updates an existing part's details.</summary>
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePartDto dto)
@@ -65,6 +67,7 @@ public class PartsController : ControllerBase
 
     /// <summary>Deletes a part from inventory.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
