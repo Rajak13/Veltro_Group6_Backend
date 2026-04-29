@@ -74,4 +74,22 @@ public class PartsController : ControllerBase
             ? Ok(ApiResponse<object>.Ok(new { }, "Part deleted."))
             : NotFound(ApiResponse<object>.Fail("Part not found."));
     }
+
+    /// <summary>Searches parts by name or description.</summary>
+    [HttpGet("search")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var result = await _partService.SearchPartsAsync(q, page, pageSize);
+        return Ok(ApiResponse<object>.Ok(result));
+    }
+
+    /// <summary>Returns parts that are below their low stock threshold.</summary>
+    [HttpGet("low-stock")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLowStock([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var result = await _partService.GetLowStockPartsAsync(page, pageSize);
+        return Ok(ApiResponse<object>.Ok(result));
+    }
 }

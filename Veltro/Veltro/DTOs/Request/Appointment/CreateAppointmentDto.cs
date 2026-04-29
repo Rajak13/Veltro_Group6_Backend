@@ -11,5 +11,7 @@ public class CreateAppointmentDto
     [Required]
     public DateTime ScheduledDate { get; set; }
 
+    public string? ServiceType { get; set; }
+
     public string? Notes { get; set; }
 }

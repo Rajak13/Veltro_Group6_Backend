@@ -30,6 +30,7 @@ public class AppointmentService : IAppointmentService
                 CustomerId = customerId,
                 VehicleId = dto.VehicleId,
                 ScheduledDate = dto.ScheduledDate,
+                ServiceType = dto.ServiceType,
                 Notes = dto.Notes,
                 Status = AppointmentStatus.Pending
             };

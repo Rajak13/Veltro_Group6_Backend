@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Veltro.Data;
 using Veltro.DTOs.Request.Appointment;
 using Veltro.DTOs.Request.Customer;
@@ -135,6 +136,29 @@ public class CustomerController : ControllerBase
         return StatusCode(201, ApiResponse<object>.Ok(new { request.RequestId }, "Part request submitted."));
     }
 
+    /// <summary>Returns all part requests for the authenticated customer.</summary>
+    [HttpGet("/api/part-requests/my")]
+    public async Task<IActionResult> GetMyPartRequests()
+    {
+        var customer = await _customerService.GetCustomerByUserIdAsync(CurrentUserId);
+        if (customer == null) return NotFound(ApiResponse<object>.Fail("Customer not found."));
+
+        var requests = await _context.PartRequests
+            .Where(pr => pr.CustomerId == customer.CustomerId)
+            .OrderByDescending(pr => pr.RequestedAt)
+            .Select(pr => new
+            {
+                pr.RequestId,
+                pr.PartName,
+                pr.Description,
+                pr.RequestedAt,
+                pr.Status
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(requests));
+    }
+
     // ─── Reviews ──────────────────────────────────────────────────────────────
 
     /// <summary>Submits a service review with a 1–5 star rating.</summary>
@@ -153,6 +177,52 @@ public class CustomerController : ControllerBase
         await _context.Reviews.AddAsync(review);
         await _context.SaveChangesAsync();
         return StatusCode(201, ApiResponse<object>.Ok(new { review.ReviewId }, "Review submitted."));
+    }
+
+    /// <summary>Returns all reviews submitted by the authenticated customer.</summary>
+    [HttpGet("/api/reviews/my")]
+    public async Task<IActionResult> GetMyReviews()
+    {
+        var customer = await _customerService.GetCustomerByUserIdAsync(CurrentUserId);
+        if (customer == null) return NotFound(ApiResponse<object>.Fail("Customer not found."));
+
+        var reviews = await _context.Reviews
+            .Where(r => r.CustomerId == customer.CustomerId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new
+            {
+                r.ReviewId,
+                r.Rating,
+                r.Comment,
+                r.IsApproved,
+                r.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(reviews));
+    }
+
+    /// <summary>Returns all approved reviews (public endpoint).</summary>
+    [HttpGet("/api/reviews")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetApprovedReviews()
+    {
+        var reviews = await _context.Reviews
+            .Include(r => r.Customer)
+            .ThenInclude(c => c.User)
+            .Where(r => r.IsApproved)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new
+            {
+                r.ReviewId,
+                r.Rating,
+                r.Comment,
+                r.CreatedAt,
+                CustomerName = r.Customer.User.FullName
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(reviews));
     }
 
     // ─── History ──────────────────────────────────────────────────────────────
